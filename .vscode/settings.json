@@ -1,0 +1,29 @@
+{
+    "files.associations": {
+        "raylib.h": "c",
+        "raymath.h": "c",
+        "string.h": "c",
+        "rlgl.h": "c",
+        "thread": "c",
+        "stdio.h": "c",
+        "*.m": "c",
+        "windows.h": "c",
+        "glew.h": "c",
+        "stdlib.h": "c",
+        "math.h": "c",
+        "time.h": "c",
+        "algorithm": "c",
+        "atomic": "c",
+        "compare": "c",
+        "concepts": "c",
+        "memory": "c",
+        "string": "c",
+        "xmemory": "c",
+        "xstring": "c",
+        "xutility": "c",
+        "util.h": "c",
+        "shader.h": "c",
+        "app_shader.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
+}

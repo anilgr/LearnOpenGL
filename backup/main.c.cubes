@@ -1,0 +1,337 @@
+#include <stdlib.h>
+#define GLEW_STATIC
+#include "GL/glew.h"
+#include "GLFW/glfw3.h"
+#include <stdio.h>
+#include <time.h>
+#include <math.h>
+#include "raylib.h"
+#include "raymath.h"
+
+#define SUPPORT_FILEFORMAT_JPG
+
+float getFrameTime(void);
+Vector2 getCursorDelta(GLFWwindow *window) {
+    static double prevCursorX, prevCursorY = 0.0f;
+    double cursorX, cursorY = 0.0f;
+    glfwGetCursorPos(window, &cursorX, &cursorY);
+    if(!(prevCursorX == 0.0f && prevCursorY == 0.0f)) {
+        Vector2 delta = (Vector2) { cursorX - prevCursorX, cursorY - prevCursorY };
+        prevCursorX = cursorX;
+        prevCursorY = cursorY;
+        return delta;
+    } else {
+        prevCursorX = cursorX;
+        prevCursorY = cursorY;
+        return (Vector2) { 0.0f, 0.0f };
+    }
+}
+int main()
+{
+    srand(time(0));
+
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    glfwWindowHint(GLFW_CURSOR_HIDDEN, GL_TRUE);
+
+    GLFWwindow *window = glfwCreateWindow(1080, 720, "OpenGL", NULL, NULL); // Windowed
+
+    // crete opengl context.
+    glfwMakeContextCurrent(window);
+
+    glewExperimental = GL_TRUE;
+    glewInit();
+
+    // generate vertex attribute array object (vao)
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+    // generate array buffer (vbo) and store the integer pointer to it.
+    GLuint vertexBuffer;
+    glGenBuffers(1, &vertexBuffer);
+    // generate element array buffer (ebo)
+    // GLuint ebo;
+    // glGenBuffers(1, &ebo);
+
+    // bind vertex buffer
+    glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+
+    float vertices[] = {
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        -0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f
+
+    };
+
+    // GLuint elements[] = {
+    //     0, 1, 2,
+    //     2, 3, 0};
+
+    // copy the above data to the arraybuffer that was binded before.
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    // // copy the elements array
+    // glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+    //              sizeof(elements), elements, GL_STATIC_DRAW);
+
+    // generate first texture object
+/*
+
+            (sldkjflsd){lksdflsjdfk, sdfkl}
+
+
+
+
+*/
+
+
+
+    glActiveTexture(GL_TEXTURE0);
+    GLuint tex;
+    glGenTextures(1, &tex);
+
+    glBindTexture(GL_TEXTURE_2D, tex);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    Image img = LoadImage("cat.png");
+    printf("\nImage format: %i", img.format);
+
+    GLsizei width = img.width;
+    GLsizei height = img.height;
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, (char *)img.data);
+    UnloadImage(img);
+
+    // second texture
+    glActiveTexture(GL_TEXTURE1);
+    GLuint tex1;
+    glGenTextures(1, &tex1);
+
+    glBindTexture(GL_TEXTURE_2D, tex1);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    Image img1 = LoadImage("dog.png");
+    printf("\nImage format: %i", img1.format);
+
+    GLsizei width1 = img1.width;
+    GLsizei height1 = img1.height;
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width1, height1, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, (char *)img1.data);
+
+    UnloadImage(img1);
+
+    // shader source code
+    const char *vertexSource =
+        "#version 150 core\n"
+        "in vec3 position;\n"
+        "in vec2 texcoord;\n"
+        "out vec3 Color;\n"
+        "out vec2 Texcoord;\n"
+        "uniform mat4 model;\n"
+        "uniform mat4 proj;\n"
+        "uniform mat4 view;\n"
+        "void main()\n"
+        "{\n"
+        "    Texcoord = texcoord;"
+        "    gl_Position = proj * view * model * vec4(position, 1.0);\n"
+        "}\n";
+
+    // create a vertex shader and and pass source code
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexSource, NULL);
+
+    // compile source code.
+    glCompileShader(vertexShader);
+
+    // compilation status for shader
+    GLint status;
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &status);
+
+    // compile log
+    char buffer[512];
+    glGetShaderInfoLog(vertexShader, 512, NULL, buffer);
+    printf("\n%s\n", buffer);
+
+    const char *fragmentSource =
+        "#version 150 core\n"
+        "in vec2 Texcoord;"
+        "out vec4 outColor;\n"
+        "uniform sampler2D texKitten;\n"
+        "uniform sampler2D texPuppy;\n"
+        "void main()\n"
+        "{\n"
+        "   vec4 colKitten = texture(texKitten, Texcoord);\n"
+        "   vec4 colPuppy = texture(texPuppy, Texcoord);\n"
+        "   vec4 temp = ((colKitten.a < 0.1) && (colPuppy.a < 0.1) ) ? vec4(1.0, 0.5, 0.3, 0.0) : mix(colPuppy, colKitten, 0.5f);\n"
+        "   outColor = temp;\n"
+        "}\n";
+
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
+    glCompileShader(fragmentShader);
+
+    // compilation status for shader
+    GLint status2;
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &status2);
+
+    // compile log
+    char buffer2[512];
+    glGetShaderInfoLog(fragmentShader, 512, NULL, buffer2);
+    printf("\n%s\n", buffer2);
+
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+
+    glLinkProgram(shaderProgram);
+    glUseProgram(shaderProgram);
+
+    GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
+    glEnableVertexAttribArray(posAttrib);
+
+    // GLint colAttrib = glGetAttribLocation(shaderProgram, "color");
+    // glEnableVertexAttribArray(colAttrib);
+
+    GLint texAttrib = glGetAttribLocation(shaderProgram, "texcoord");
+
+    glEnableVertexAttribArray(texAttrib);
+
+    glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE,
+                          5 * sizeof(float), 0);
+
+    // glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE,
+    //   8 * sizeof(float), (void *)(3 * sizeof(float)));
+
+    glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE,
+                          5 * sizeof(float), (void *)(3 * sizeof(float)));
+
+    glUniform1i(glGetUniformLocation(shaderProgram, "texKitten"), 0);
+    glUniform1i(glGetUniformLocation(shaderProgram, "texPuppy"), 1);
+
+    Matrix model = MatrixRotate((Vector3){0.0f, 0.0f, 0.1f}, 0);
+    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, MatrixToFloatV(model).v);
+
+    Matrix view = MatrixLookAt((Vector3){4.0f, 4.0f, 4.0f}, (Vector3){0.0f, 0.0f, 0.0f}, (Vector3){0.0f, 1.0f, 0.0f});
+    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, MatrixToFloatV(view).v);
+
+    Matrix proj = MatrixPerspective(45.0f * DEG2RAD, 1080.0f / 720.0f, 1.0f, 100.0f);
+    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "proj"), 1, GL_FALSE, MatrixToFloatV(proj).v);
+
+    Vector3 cubePositions[] = {
+        (Vector3){0.0f, 0.0f, 0.0f},
+        (Vector3){2.0f, 5.0f, -15.0f},
+        (Vector3){-1.5f, -2.2f, -2.5f},
+        (Vector3){-3.8f, -2.0f, -12.3},
+        (Vector3){2.4f, -0.4f, -3.5f},
+        (Vector3){-1.7f, 3.0f, -7.5f},
+        (Vector3){1.3f, -2.0f, -2.5f},
+        (Vector3){1.5f, 2.0f, -2.5f},
+        (Vector3){1.5f, 0.2f, -1.5f},
+        (Vector3){-1.3f, 1.0f, -1.5f}};
+
+    Vector3 cameraPos = (Vector3){0.0f, 0.0f, 3.0f};
+    Vector3 cameraFront = (Vector3){0.0f, 0.0f, -1.0f};
+    Vector3 cameraUp = (Vector3){0.0f, 1.0f, 0.0f};
+    double prevTimestamp = glfwGetTime();
+
+    double deltaYaw = 0.0f;
+    double deltaPitch = 0.0f; 
+
+    while (!glfwWindowShouldClose(window))
+    {
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+            glfwSetWindowShouldClose(window, GL_TRUE);
+
+        glEnable(GL_DEPTH_TEST);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        double delta = glfwGetTime() - prevTimestamp;
+        prevTimestamp = prevTimestamp + delta;
+
+        
+
+        const float cameraSpeed = 5.0f * delta; // adjust accordingly
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+            cameraPos = Vector3Add(cameraPos, Vector3Scale(cameraFront, cameraSpeed));
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+            cameraPos = Vector3Subtract(cameraPos, Vector3Scale(cameraFront, cameraSpeed));
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+            cameraPos = Vector3Subtract(cameraPos, Vector3Scale(Vector3Normalize(Vector3CrossProduct(cameraFront, cameraUp)), cameraSpeed));
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+            cameraPos = Vector3Add(cameraPos, Vector3Scale(Vector3Normalize(Vector3CrossProduct(cameraFront, cameraUp)), cameraSpeed));
+       
+        Vector2 d = getCursorDelta(window);
+        deltaYaw = d.x;
+        deltaPitch = d.y;
+        cameraFront = Vector3RotateByAxisAngle(cameraFront, cameraUp, (-1.0f * deltaYaw * 360.0f) * DEG2RAD * delta);
+        Vector3 axs = Vector3Normalize(Vector3CrossProduct(cameraFront, cameraUp));
+        cameraFront = Vector3RotateByAxisAngle(cameraFront, axs, (-1.0f * deltaPitch * 360.0f) * DEG2RAD * delta);
+
+        Matrix view = MatrixLookAt(cameraPos, Vector3Add(cameraPos, cameraFront), cameraUp);
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, MatrixToFloatV(view).v);
+
+        for (unsigned int i = 0; i < 10; i++)
+        {
+            Matrix model = MatrixIdentity();
+            model = MatrixMultiply(model, MatrixTranslate(cubePositions[i].x, cubePositions[i].y, cubePositions[i].x));
+            float angle = 20.0f * i;
+            model = MatrixMultiply(model, MatrixRotate((Vector3){1.0f, 0.3f, 0.5f}, angle * DEG2RAD));
+            glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, MatrixToFloatV(model).v);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+    }
+
+    glfwTerminate();
+}

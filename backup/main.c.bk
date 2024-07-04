@@ -1,0 +1,115 @@
+/*******************************************************************************************
+*
+*   raylib [models] example - Load 3d model with animations and play them
+*
+*   Example originally created with raylib 2.5, last time updated with raylib 3.5
+*
+*   Example contributed by Culacant (@culacant) and reviewed by Ramon Santamaria (@raysan5)
+*
+*   Example licensed under an unmodified zlib/libpng license, which is an OSI-certified,
+*   BSD-like license that allows static linking with closed source software
+*
+*   Copyright (c) 2019-2023 Culacant (@culacant) and Ramon Santamaria (@raysan5)
+*
+********************************************************************************************
+*
+*   NOTE: To export a model from blender, make sure it is not posed, the vertices need to be 
+*         in the same position as they would be in edit mode and the scale of your models is 
+*         set to 0. Scaling can be done from the export menu.
+*
+********************************************************************************************/
+
+#include "raylib.h"
+#include <stdio.h>
+#include "raymath.h"
+
+//------------------------------------------------------------------------------------
+// Program main entry point
+//------------------------------------------------------------------------------------
+int main(void)
+{
+    // Initialization
+    //--------------------------------------------------------------------------------------
+    const int screenWidth = 800;
+    const int screenHeight = 600;
+
+    InitWindow(screenWidth, screenHeight, "Firetruck model.");
+    Vector3 position = { 0.0f, 0.0f, 0.0f }; 
+
+    // Define the camera to look into our 3d world
+    Camera camera = { 0 };
+    camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
+    camera.target = position;      // Camera looking at point
+    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
+    camera.fovy = 45.0f;                                // Camera field-of-view Y
+    camera.projection = CAMERA_PERSPECTIVE;             // Camera mode type
+
+    Model model = LoadModel("models/firetruck.obj");                    // Load the animated model mesh and basic data
+    Texture2D texture = LoadTexture("models/textures/colormap.png");         // Load model texture and set material
+    SetMaterialTexture(&model.materials[0], MATERIAL_MAP_DIFFUSE, texture);     // Set model material map texture
+    Vector3 turn = (Vector3){0.0f, 0.0f, 5.0f};
+    float angle = 0.0f;
+    float rotationSpeed = 1.0f;
+    DisableCursor();                    // Catch cursor
+    SetTargetFPS(60);                   // Set our game to run at 60 frames-per-second
+    //--------------------------------------------------------------------------------------
+
+    // Main game loop
+    while (!WindowShouldClose())        // Detect window close button or ESC key
+    {
+        // Update
+        //----------------------------------------------------------------------------------
+        //UpdateCamera(&camera, CAMERA_FIRST_PERSON);
+
+
+        if(IsKeyDown(KEY_D)) {
+            angle -= rotationSpeed * GetFrameTime();
+            turn = Vector3RotateByAxisAngle(turn, (Vector3){0.0f, 1.0f, 0.0f}, -rotationSpeed * GetFrameTime());
+            // position = Vector3Add(position, turn);
+        }
+
+        if(IsKeyDown(KEY_A)) {
+            angle += rotationSpeed * GetFrameTime();
+            turn = Vector3RotateByAxisAngle(turn, (Vector3){0.0f, 1.0f, 0.0f}, rotationSpeed * GetFrameTime());
+            // position = Vector3Subtract(position, turn);
+        }
+
+        if(IsKeyDown(KEY_W)) {
+            position = Vector3Add(position, Vector3Scale(turn, GetFrameTime()));
+        }
+
+        if(IsKeyDown(KEY_S)) {
+            position = Vector3Subtract(position, Vector3Scale(turn, GetFrameTime()));
+        }
+        
+        camera.target = Vector3Lerp(camera.target, position, 0.05f);
+        Vector3 idealPos = Vector3Add(position, Vector3Add(Vector3Scale(turn, -5), (Vector3){0.0f, 20.0f, 0.0f}));
+        camera.position = Vector3Lerp(camera.position, idealPos, 0.05f);
+
+        // Draw
+        //----------------------------------------------------------------------------------
+        BeginDrawing();
+
+            ClearBackground(RAYWHITE);
+
+            BeginMode3D(camera);
+                DrawModelEx(model, position, (Vector3){ 0.0f, 1.0f, 0.0f }, angle * RAD2DEG, (Vector3){ 2.0f, 2.0f, 2.0f }, WHITE);
+                DrawLine3D(Vector3Zero(), position, RED);
+                DrawLine3D(position, Vector3Add(position, Vector3Scale(turn, 10.0f)), RED);
+                DrawGrid(100, 1.0f);         // Draw a grid
+            EndMode3D();
+
+        EndDrawing();
+        //----------------------------------------------------------------------------------
+    }
+
+    // De-Initialization
+    //--------------------------------------------------------------------------------------
+    UnloadTexture(texture);                     // Unload texture
+    UnloadModel(model);                         // Unload model
+
+    CloseWindow();                  // Close window and OpenGL context
+    //--------------------------------------------------------------------------------------
+
+    return 0;
+}
