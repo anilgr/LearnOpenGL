@@ -1,6 +1,6 @@
 #version 150 core
 out vec4 outColor;
-void main()
-{
-    outColor = vec4(1.0f);
-};
+uniform vec3 color;
+void main() {
+    outColor = vec4(color, 1.0f);
+}

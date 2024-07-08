@@ -37,7 +37,7 @@ App_Shader* App_Shader_Load(char *vsFileName, char *fsFileName) {
     char buffer[512];
     glGetShaderInfoLog(vertexShader, 512, NULL, buffer);
 
-    printf("\n%s\n", buffer);
+    printf("\nvertex shader %s:\n %s\n", vsFileName,buffer);
 
     // set the source code of shader.
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -56,7 +56,7 @@ App_Shader* App_Shader_Load(char *vsFileName, char *fsFileName) {
 
     // create program out of vertex and fragment shader.
 
-    printf("\n%s\n", buffer2);
+    printf("fragment shader %s:\n%s\n", fsFileName, buffer2);
 
     GLuint shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
@@ -85,6 +85,14 @@ void App_Shader_SetMatrix4f(App_Shader *shader, char* uniform,  float matrix[16]
 
 void App_Shader_SetVec3f(App_Shader *shader, char* uniform, float vec[3]) {
     glUniform3fv(glGetUniformLocation(shader->program, uniform), 1, vec);
+}
+
+void App_Shader_Set1f(App_Shader *shader, char* uniform, float vec) {
+    glUniform1f(glGetUniformLocation(shader->program, uniform), vec);
+}
+
+void App_Shader_Set1i(App_Shader *shader, char* uniform, int value) {
+    glUniform1i(glGetUniformLocation(shader->program, uniform), value);
 }
 
 #endif

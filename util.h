@@ -8,6 +8,10 @@
 typedef float app_float3[3];
 typedef float app_float16[16];
 
+Vector3 Vector31f(float value) {
+    return (Vector3) { value, value, value };
+}
+
 const char * readText(char *fileName) {
     FILE *file = fopen(fileName, "rw");
     int size = 0;

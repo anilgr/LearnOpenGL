@@ -71,8 +71,7 @@ int main()
         0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
         0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
         -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f
-    };
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f};
 
     // generate vertex attribute array object (vao)
     GLuint Box_VAO;
@@ -85,7 +84,7 @@ int main()
 
     // copy the above data to the arraybuffer that was binded before.
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    App_Shader *boxShader = App_Shader_Load("box.vs", "box.fs"); 
+    App_Shader *boxShader = App_Shader_Load("box.vs", "box.fs");
 
     // get the shader attribute locs
 
@@ -106,13 +105,58 @@ int main()
     glEnableVertexAttribArray(aTexCoord);
     glVertexAttribPointer(aTexCoord, 2, GL_FLOAT, GL_FALSE,
                           8 * sizeof(float), (void *)(6 * sizeof(float)));
-    
+
     App_Shader_Use(boxShader);
     Matrix proj = MatrixPerspective(45.0f * DEG2RAD, 1080.0f / 720.0f, 1.0f, 100.0f);
     App_Shader_SetMatrix4f(boxShader, "proj", MatrixToFloatV(proj).v);
-    App_Shader_SetVec3f(boxShader, "objectColor", (app_float3){ 1.0f, 0.5f, 0.0f });
-    App_Shader_SetVec3f(boxShader, "lightColor", (app_float3){1.0f, 1.0f, 1.0f});
-    App_Shader_SetVec3f(boxShader, "lightPos", (app_float3){ 2.0f, 2.0f, -2.0f });
+    App_Shader_SetVec3f(boxShader, "light.position", (app_float3){2.0f, 2.0f, -2.0f});
+    App_Shader_Set1i(boxShader, "material.diffuse", 0);
+    App_Shader_Set1i(boxShader, "material.specular", 1);
+    App_Shader_Set1f(boxShader, "material.shininess", 32.0f);
+
+    GLuint diffuseMap;
+    glGenTextures(1, &diffuseMap);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, diffuseMap);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    Image img = LoadImage("container2.png");
+    printf("\nImage format: %i", img.format);
+
+    GLsizei width = img.width;
+    GLsizei height = img.height;
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, (char *)img.data);
+    UnloadImage(img);
+
+    GLuint specularMap;
+    glGenTextures(1, &specularMap);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, specularMap);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    img = LoadImage("container2_specular.png");
+    printf("\nImage format: %i", img.format);
+
+    width = img.width;
+    height = img.height;
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, (char *)img.data);
+    UnloadImage(img);
 
     // generate vertex attribute array object (vao)
     GLuint Light_vao;
@@ -122,11 +166,23 @@ int main()
 
     App_Shader *lightShader = App_Shader_Load("light.vs", "light.fs");
 
-    GLint Light_aPos = glGetAttribLocation(lightShader->program, "aPos");
-    
-    glEnableVertexAttribArray(Light_aPos);
-    glVertexAttribPointer(Light_aPos, 3, GL_FLOAT, GL_FALSE,
+    aPos = glGetAttribLocation(lightShader->program, "aPos");
+
+    aNormal = glGetAttribLocation(lightShader->program, "aNormal");
+
+    aTexCoord = glGetAttribLocation(lightShader->program, "aTexCoord");
+
+    glEnableVertexAttribArray(aPos);
+    glVertexAttribPointer(aPos, 3, GL_FLOAT, GL_FALSE,
                           8 * sizeof(float), 0);
+
+    glEnableVertexAttribArray(aNormal);
+    glVertexAttribPointer(aNormal, 3, GL_FLOAT, GL_FALSE,
+                          8 * sizeof(float), (void *)(3 * sizeof(float)));
+
+    glEnableVertexAttribArray(aTexCoord);
+    glVertexAttribPointer(aTexCoord, 2, GL_FLOAT, GL_FALSE,
+                          8 * sizeof(float), (void *)(6 * sizeof(float)));
 
     App_Shader_Use(lightShader);
     App_Shader_SetMatrix4f(lightShader, "proj", MatrixToFloatV(proj).v);
@@ -176,30 +232,48 @@ int main()
         cameraFront = Vector3RotateByAxisAngle(cameraFront, axs, (deltaPitch * 50.0f) * DEG2RAD * delta);
         // update view matrix
         Matrix view = MatrixLookAt(cameraPos, Vector3Add(cameraPos, cameraFront), cameraUp);
+
         App_Shader_Use(boxShader);
+
         App_Shader_SetMatrix4f(boxShader, "view", MatrixToFloatV(view).v);
+
         Matrix model = MatrixIdentity();
         model = MatrixMultiply(model, MatrixTranslate(0.0f, 0.0f, 0.0f));
-        float angle = 90.0f * sin(glfwGetTime()/4.0f);
+        float angle = 90.0f * sin(glfwGetTime() / 4.0f);
         Matrix boxModel = MatrixMultiply(model, MatrixRotate((Vector3){1.0f, 0.3f, 0.5f}, angle * DEG2RAD));
+
         App_Shader_SetMatrix4f(boxShader, "model", MatrixToFloatV(boxModel).v);
+
         App_Shader_SetVec3f(boxShader, "viewPos", Vector3ToFloat(cameraPos));
-        double offset = 2.0f * sin(glfwGetTime());
-        float pos[3] = { 1.5f, 2.0f + offset, -1.5f };
-        App_Shader_SetVec3f(boxShader, "lightPos", pos);
+
+        float lightPos[3] = {-1.0f, 1.0f , 1.5f};
+        App_Shader_SetVec3f(boxShader, "light.position", lightPos);
+
+        Vector3 lightColor;
+        lightColor.x = fmaxf(sin(glfwGetTime() * 2.0f), 1.0f);
+        lightColor.y = fmaxf(sin(glfwGetTime() * 0.7f), 1.0f);
+        lightColor.z = fmaxf(sin(glfwGetTime() * 1.3f), 1.0f);
+        Vector3 diffuseColor = Vector3Multiply(lightColor, Vector31f(0.5f));
+        Vector3 ambientColor = Vector3Multiply(diffuseColor, Vector31f(0.2f));
+        App_Shader_SetVec3f(boxShader, "light.specular", Vector3ToFloatV(lightColor).v);
+        App_Shader_SetVec3f(boxShader, "light.ambient", Vector3ToFloatV(ambientColor).v);
+        App_Shader_SetVec3f(boxShader, "light.diffuse", Vector3ToFloatV(diffuseColor).v);
 
         glBindVertexArray(Box_VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         App_Shader_Use(lightShader);
+
+        App_Shader_SetVec3f(lightShader, "color", Vector3ToFloatV(lightColor).v);
+
         App_Shader_SetMatrix4f(lightShader, "view", MatrixToFloatV(view).v);
+
         Matrix lightModel = MatrixMultiply(model, MatrixScale(0.5f, 0.5f, 0.5f));
-        lightModel = MatrixMultiply(lightModel, MatrixTranslate(1.5f, 2.0f + offset, -1.5f));
+        lightModel = MatrixMultiply(lightModel, MatrixTranslate(lightPos[0], lightPos[1], lightPos[2]));
         App_Shader_SetMatrix4f(lightShader, "model", MatrixToFloatV(lightModel).v);
-        
+
         glBindVertexArray(Light_vao);
         glDrawArrays(GL_TRIANGLES, 0, 36);
-
     }
 
     glfwTerminate();
